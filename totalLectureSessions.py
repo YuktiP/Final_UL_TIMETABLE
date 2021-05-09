@@ -62,7 +62,7 @@ def readCsvFromBucket():
     fs = gcsfs.GCSFileSystem(project=project_name)
     with fs.open(bucket_name) as f:
         pandasDF = pd.read_csv(f)
-    
+    pandasDF.head(5)
     print("Read CSV from Bucket")
     return pandasDF
 
