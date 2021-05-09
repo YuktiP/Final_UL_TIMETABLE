@@ -31,7 +31,7 @@ def getTotalLectureSessions(df,spark):
     total_sessions = output.select(col('total_sessions').alias('total_sessions')).first().total_sessions
     session_type = output.select(col('type').alias('session_type')).first().session_type
 
-    print("Total number of sessions of type (", session_type, "): ", total_sessions)
+    print("Total number of sessions of type (", session_type, ") for Spring 20/21 semester(current) at University of Limerick: ", total_sessions)
 
 def createAdditionalColumns(calculate_udf,df):
     df = df.withColumn('from',(regexp_replace(split(col('time'),'-')[0],':','.')).cast('double'))
@@ -39,6 +39,9 @@ def createAdditionalColumns(calculate_udf,df):
     df = df.withColumn("duration",(col("to") - col("from")).cast('integer')).drop("from").drop("to")
     df = df.withColumn("week_array",split(col("weeks"),","))
     df = df.withColumn("total_sessions",calculate_udf("week_array").cast('Integer'))
+    df = df.withColumn("year",col("year").cast('Integer'))
+    df = df.drop("Unnamed: 0")
+    df = df.drop("week_array")
     return df
 
 def registerUDF(spark):
@@ -52,17 +55,18 @@ def createDataFrame(spark,schema):
     #     .schema(schema) \
     #     .load(file_path)
     pandasDF = readCsvFromBucket()
-    sparkDF=spark.createDataFrame(pandasDF).option("header", True).schema(schema)
+    sparkDF=spark.createDataFrame(pandasDF)
     calculate_udf = registerUDF(spark)
     df = createAdditionalColumns(calculate_udf,sparkDF)
-    print("Dataframe created")
+    print("Dataframe created with below schema")
+    df.printSchema()
     return df
 
 def readCsvFromBucket():
     fs = gcsfs.GCSFileSystem(project=project_name)
     with fs.open(bucket_name) as f:
         pandasDF = pd.read_csv(f,encoding='latin-1')
-    pandasDF.head(5)
+    pandasDF = pandasDF.fillna('')
     print("Read CSV from Bucket")
     return pandasDF
 
