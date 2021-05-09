@@ -124,7 +124,8 @@ if __name__ == "__main__":
 	timetable_df = parseHtml()
 	print("Time table data extracted successfully")
 	ts = time.time() 
-	filename = str(ts) + '_ultimetable.csv'
+	#filename = str(ts) + '_ultimetable.csv'
+	filename = 'ultimetable.csv'
 	timetable_df.to_csv(filename, index=False)
 	print("Extracted 'csv' file saved...")
 	uploadToGCloudBucket(filename)

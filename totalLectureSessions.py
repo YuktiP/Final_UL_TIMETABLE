@@ -3,13 +3,14 @@ from pyspark.sql.types import StructType,StructField, StringType, IntegerType
 from pyspark.sql.types import ArrayType, DoubleType, BooleanType 
 from pyspark.sql.functions import split, col, regexp_replace,size
 from pyspark.sql.functions import udf
-import glob
-import os.path
+import gcsfs
+import pandas as pd
 
 APP_NAME = "ULTimetable"
 #schema for dataFrame
 schema = StructType()
-file_path = "1620580452.394284_ultimetable.csv"
+project_name = '20097786-etl-spark-timetable'
+bucket_name = 'gs://20097786-ultimetable/ultimetable.csv'
 
 def calculate_lecs(week_array):
     total_lecs = 0
@@ -46,14 +47,24 @@ def registerUDF(spark):
     return calculate_udf
 
 def createDataFrame(spark,schema):
-    df = spark.read.format("csv") \
-        .option("header", True) \
-        .schema(schema) \
-        .load(file_path)
-    df.show()
+    # df = spark.read.format("csv") \
+    #     .option("header", True) \
+    #     .schema(schema) \
+    #     .load(file_path)
+    pandasDF = readCsvFromBucket()
+    sparkDF=spark.createDataFrame(pandasDF) 
     calculate_udf = registerUDF(spark)
-    df = createAdditionalColumns(calculate_udf,df)
+    df = createAdditionalColumns(calculate_udf,sparkDF)
+    print("Dataframe created")
     return df
+
+def readCsvFromBucket():
+    fs = gcsfs.GCSFileSystem(project=project_name)
+    with fs.open(bucket_name) as f:
+        pandasDF = pd.read_csv(f)
+    
+    print("Read CSV from Bucket")
+    return pandasDF
 
 def createSchema():
     schema = StructType() \
@@ -80,4 +91,5 @@ def main(spark):
 
 if __name__ == "__main__":
 	spark = SparkSession.builder.appName(APP_NAME).getOrCreate()
+	print("Spark session started - get total lecture session for Spring 20/21")
 	main(spark)
