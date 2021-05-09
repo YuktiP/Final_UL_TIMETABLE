@@ -5,6 +5,7 @@ from pyspark.sql.functions import split, col, regexp_replace,size
 from pyspark.sql.functions import udf
 import gcsfs
 import pandas as pd
+from google.cloud import bigquery
 
 APP_NAME = "ULTimetable"
 #schema for dataFrame
@@ -88,10 +89,19 @@ def createSchema():
       .add("duration",IntegerType(),True) 
     return schema
 
+def LoadBigQueryTable(dataFrame):
+    print("Load BigQuery Table..")
+    dataFrame.write \
+      .mode("overwrite") \
+      .format("bigquery") \
+      .option("temporaryGcsBucket","20097786-ultimetable") \
+      .save("dm_timetable_spring21.ul_timetable")
+
 def main(spark):
     schema = createSchema()
     df = createDataFrame(spark,schema)
     getTotalLectureSessions(df,spark)
+    LoadBigQueryTable(df)
 
 if __name__ == "__main__":
 	spark = SparkSession.builder.appName(APP_NAME).getOrCreate()
