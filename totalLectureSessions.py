@@ -52,7 +52,7 @@ def createDataFrame(spark,schema):
     #     .schema(schema) \
     #     .load(file_path)
     pandasDF = readCsvFromBucket()
-    sparkDF=spark.createDataFrame(pandasDF).option("header", True)
+    sparkDF=spark.createDataFrame(pandasDF).option("header", True).schema(schema)
     calculate_udf = registerUDF(spark)
     df = createAdditionalColumns(calculate_udf,sparkDF)
     print("Dataframe created")
